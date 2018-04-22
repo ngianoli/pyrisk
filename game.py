@@ -48,7 +48,9 @@ class Game(object):
 
     def add_player(self, name, ai_class, **ai_kwargs):
         assert name not in self.players
-        player = Player(name, self, ai_class, ai_kwargs)
+        color_to_int={'red':1, 'green':2, 'yellow':3, 'blue':4, 'purple':5}
+        color=color_to_int[name]
+        player = Player(name, color, self, ai_class, ai_kwargs)
         self.players[name] = player
 
     @property
@@ -66,29 +68,29 @@ class Game(object):
         `msg` is a tuple describing what happened.
         `territory` is a list of territory objects to be highlighted, if any
         `player` is a list of player names to be highlighted, if any
-        
+
         Calling this method triggers the display to be updated, and any AI
         players that have implemented event() to be notified.
         """
-        
+
         self.display.update(msg, territory=territory, player=player)
-        
+
         LOG.info([str(m) for m in msg])
         for p in self.players.values():
             p.ai.event(msg)
-        
+
     def play(self):
         assert 2 <= len(self.players) <= 5
         self.turn_order = list(self.players)
         random.shuffle(self.turn_order)
         for i, name in enumerate(self.turn_order):
-            self.players[name].color = i + 1
+            #self.players[name].color = i + 1
             self.players[name].ord = ord('\/-|+*'[i])
             self.players[name].ai.start()
         self.event(("start", ))
         live_players = len(self.players)
         self.initial_placement()
-        
+        stalemate=False
         while live_players > 1:
             if self.player.alive:
                 choices = self.player.ai.reinforce(self.player.reinforcements)
@@ -107,7 +109,7 @@ class Game(object):
                         continue
                     t.forces += f
                     self.event(("reinforce", self.player, t, f), territory=[t], player=[self.player.name])
-                
+
                 for src, target, attack, move in self.player.ai.attack():
                     st = self.world.territory(src)
                     tt = self.world.territory(target)
@@ -159,7 +161,12 @@ class Game(object):
                         self.event(("move", self.player, st, tt, count), territory=[st, tt], player=[self.player.name])
                 live_players = len([p for p in self.players.values() if p.alive])
             self.turn += 1
+            if self.turn>1000:
+                stalemate=True
+                break
         winner = [p for p in self.players.values() if p.alive][0]
+        #if stalemate:
+        #        winner.name='Stale Horse'
         self.event(("victory", winner), player=[self.player.name])
         for p in self.players.values():
             p.ai.end()
@@ -185,7 +192,7 @@ class Game(object):
                     n_def -= 1
                 else:
                     n_atk -= 1
-        
+
         if n_def == 0:
             move = f_move(n_atk)
             min_move = min(n_atk - 1, 3)
@@ -237,7 +244,7 @@ class Game(object):
                 empty.remove(t)
                 self.event(("claim", self.player, t), territory=[t], player=[self.player.name])
                 self.turn += 1
-        
+
         while sum(remaining.values()) > 0:
             if remaining[self.player.name] > 0:
                 choice = self.player.ai.initial_placement(None, remaining[self.player.name])
@@ -254,4 +261,3 @@ class Game(object):
                 remaining[self.player.name] -= 1
                 self.event(("reinforce", self.player, t, 1), territory=[t], player=[self.player.name])
                 self.turn += 1
-

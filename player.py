@@ -1,9 +1,9 @@
 from copy import deepcopy
 
 class Player(object):
-    def __init__(self, name, game, ai_class, ai_kwargs):
+    def __init__(self, name, color, game, ai_class, ai_kwargs):
         self.name = name
-        self.color = 0
+        self.color = color
         self.ord = 32
         self.ai = ai_class(self, game, game.world, **ai_kwargs)
         self.world = game.world
@@ -28,7 +28,7 @@ class Player(object):
             if a.owner == self:
                 yield a
 
-    @property    
+    @property
     def forces(self):
         return sum(t.forces for t in self.territories)
 
@@ -45,7 +45,7 @@ class Player(object):
 
     def __hash__(self):
         return hash(("player", self.name))
-        
+
     def __eq__(self, other):
         if isinstance(other, Player):
             return self.name == other.name

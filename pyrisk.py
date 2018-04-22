@@ -23,11 +23,11 @@ parser.add_argument("-s", "--seed", type=int, default=None, help="Random number 
 parser.add_argument("-g", "--games", type=int, default=1, help="Number of rounds to play")
 parser.add_argument("-w", "--wait", action="store_true", default=False, help="Pause and wait for a keypress after each action")
 parser.add_argument("players", nargs="+", help="Names of the AI classes to use. May use 'ExampleAI*3' syntax.")
-parser.add_argument("--deal", action="store_true", default=False, help="Deal territories rather than letting players choose")
+parser.add_argument("--deal", action="store_true", default=True, help="Deal territories rather than letting players choose")
 
 args = parser.parse_args()
 
-NAMES = ["ALPHA", "BRAVO", "CHARLIE", "DELTA", "ECHO", "FOXTROT"]
+#NAMES = ["ALPHA", "BRAVO", "CHARLIE", "DELTA", "ECHO", "FOXTROT"]
 
 LOG.setLevel(logging.DEBUG)
 if args.log:
@@ -39,6 +39,35 @@ if args.seed is not None:
     random.seed(args.seed)
 
 player_classes = []
+my_colors = []
+
+for p in args.players:
+    match = re.match(r"(\w+)?", p)
+    if match:
+        #import mechanism
+        #we expect a particular filename->classname mapping such that
+        #ExampleAI resides in ai/example.py, FooAI in ai/foo.py etc.
+
+        name, color = match.group(1).split('_')
+        if color in ['red', 'green', 'blue', 'yellow', 'purple']:
+            my_colors.append(color)
+        else:
+            raise Exception("Color not recognized : {}".format(color))
+
+        #name = match.group(1)
+        package = name[:-2].lower()
+
+        color
+
+        try:
+            klass = getattr(importlib.import_module("ai."+package), name)
+            player_classes.append(klass)
+
+        except:
+            print("Unable to import AI %s from ai/%s.py" % (name, package))
+            raise
+
+'''
 for p in args.players:
     match = re.match(r"(\w+)?(\*\d+)?", p)
     if match:
@@ -58,15 +87,16 @@ for p in args.players:
         except:
             print("Unable to import AI %s from ai/%s.py" % (name, package))
             raise
+'''
 
 kwargs = dict(curses=args.curses, color=args.color, delay=args.delay,
               connect=CONNECT, cmap=MAP, ckey=KEY, areas=AREAS, wait=args.wait, deal=args.deal)
 def wrapper(stdscr, **kwargs):
     g = Game(screen=stdscr, **kwargs)
     for i, klass in enumerate(player_classes):
-        g.add_player(NAMES[i], klass)
+        g.add_player(my_colors[i], klass)
     return g.play()
-        
+
 if args.games == 1:
     if args.curses:
         curses.wrapper(wrapper, **kwargs)
@@ -84,5 +114,4 @@ else:
         wins[victor] += 1
     print("Outcome of %s games" % args.games)
     for k in sorted(wins, key=lambda x: wins[x]):
-        print("%s [%s]:\t%s" % (k, player_classes[NAMES.index(k)].__name__, wins[k]))
-
+        print("%s [%s]:\t%s" % (k, player_classes[my_colors.index(k)].__name__, wins[k]))

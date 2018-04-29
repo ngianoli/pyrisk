@@ -7,6 +7,7 @@ class Player(object):
         self.ord = 32
         self.ai = ai_class(self, game, game.world, **ai_kwargs)
         self.world = game.world
+        
 
     @property
     def territories(self):

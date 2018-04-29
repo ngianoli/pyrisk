@@ -5,6 +5,109 @@ from world import CONNECT, AREAS, MAP, KEY
 import logging
 LOG = logging.getLogger("pyrisk")
 import random
+import numpy as np
+
+
+
+
+
+
+
+
+
+territories = ["Alaska","Northwest Territories","Greenland","Alberta","Ontario","Quebec","Western United States","Eastern United States","Mexico",
+               "Venezuala","Peru","Argentina","Brazil",
+               "Iceland","Great Britain","Scandanavia","Western Europe","Northern Europe","Southern Europe","Ukraine",
+               "North Africa","Egypt","East Africa","Congo","South Africa","Madagascar",
+               "Middle East","Ural","Siberia","Yakutsk","Irkutsk","Kamchatka","Afghanistan","Mongolia","China","Japan","India","South East Asia",
+               "Indonesia","New Guinea","Western Australia", "Eastern Australia"]
+
+possible_attacks = ["no attack",
+                    # inside North America
+                    "T;Alaska, T;Northwest Territories", "T;Alaska, T;Alberta", "T;Alberta, T;Alaska",
+                    "T;Alberta, T;Northwest Territories", "T;Alberta, T;Ontario", "T;Alberta, T;Western United States",
+                    "T;Northwest Territories, T;Alaska","T;Northwest Territories, T;Ontario","T;Northwest Territories, T;Alberta",
+                    "T;Northwest Territories, T;Greenland","T;Ontario, T;Alberta","T;Ontario, T;Greenland",
+                    "T;Ontario, T;Northwest Territories","T;Ontario, T;Quebec","T;Ontario, T;Western United States",
+                    "T;Ontario, T;Eastern United States",
+                    "T;Greenland, T;Northwest Territories","T;Greenland, T;Ontario","T;Greenland, T;Quebec",
+                    "T;Quebec, T;Eastern United States", "T;Quebec, T;Greenland","T;Quebec, T;Ontario",
+                    "T;Western United States, T;Eastern United States", "T;Western United States, T;Mexico",
+                    "T;Western United States, T;Alberta", "T;Western United States, T;Ontario",
+                    "T;Mexico, T;Eastern United States", "T;Mexico, T;Western United States",
+                    "T;Eastern United States, T;Mexico","T;Eastern United States, T;Ontario",
+                    "T;Eastern United States, T;Quebec","T;Eastern United States, T;Western United States",
+                    # inside South America
+                    "T;Peru, T;Argentina", "T;Peru, T;Brazil", "T;Peru, T;Venezuala",
+                    "T;Argentina, T;Brazil","T;Argentina, T;Peru",
+                    "T;Brazil, T;Argentina","T;Brazil, T;Peru","T;Brazil, T;Venezuala",
+                    "T;Venezuala, T;Brazil","T;Venezuala, T;Peru",
+                    # inside Europe
+                    "T;Scandanavia, T;Great Britain", "T;Scandanavia, T;Iceland",
+                    "T;Scandanavia, T;Northern Europe","T;Scandanavia, T;Ukraine",
+                    "T;Western Europe, T;Northern Europe","T;Western Europe, T;Southern Europe","T;Western Europe, T;Great Britain",
+                    "T;Great Britain, T;Iceland", "T;Great Britain, T;Western Europe",
+                    "T;Great Britain, T;Northern Europe","T;Great Britain, T;Scandanavia",
+                    "T;Iceland, T;Scandanavia","T;Iceland, T;Great Britain",
+                    "T;Southern Europe, T;Northern Europe","T;Southern Europe, T;Ukraine","T;Southern Europe, T;Western Europe",
+                    "T;Ukraine, T;Northern Europe","T;Ukraine, T;Scandanavia","T;Ukraine, T;Southern Europe",
+                    "T;Northern Europe, T;Great Britain","T;Northern Europe, T;Scandanavia",
+                    "T;Northern Europe, T;Southern Europe","T;Northern Europe, T;Ukraine","T;Northern Europe, T;Western Europe",
+                    # inside Africa
+                    "T;South Africa, T;East Africa","T;South Africa, T;Madagascar","T;South Africa, T;Congo",
+                    "T;Congo, T;North Africa","T;Congo, T;East Africa","T;Congo, T;South Africa",
+                    "T;East Africa, T;Congo","T;East Africa, T;Egypt","T;East Africa, T;Madagascar",
+                    "T;Egypt, T;North Africa", "T;Egypt, T;East Africa",
+                    "T;East Africa, T;South Africa","T;East Africa, T;North Africa",
+                    "T;Madagascar, T;East Africa","T;Madagascar, T;South Africa",
+                    "T;North Africa, T;Congo","T;North Africa, T;Egypt","T;North Africa, T;East Africa",
+                    # inside Asia
+                    "T;Afghanistan, T;China", "T;Afghanistan, T;India", "T;Afghanistan, T;Middle East",
+                    "T;China, T;Afghanistan","T;China, T;India", "T;China, T;Mongolia",
+                    "T;China, T;Siberia", "T;China, T;South East Asia", "T;China, T;Ural",
+                    "T;Siberia, T;China","T;Siberia, T;Irkutsk","T;Siberia, T;Mongolia",
+                    "T;Siberia, T;Ural","T;Siberia, T;Yakutsk", "T;Afghanistan, T;Ural",
+                    "T;South East Asia, T;China","T;South East Asia, T;India",
+                    "T;India, T;Afghanistan","T;India, T;China","T;India, T;Middle East","T;India, T;South East Asia",
+                    "T;Irkutsk, T;Kamchatka","T;Irkutsk, T;Mongolia","T;Irkutsk, T;Siberia","T;Irkutsk, T;Yakutsk",
+                    "T;Japan, T;Kamchatka","T;Japan, T;Mongolia",
+                    "T;Kamchatka, T;Irkutsk","T;Kamchatka, T;Mongolia","T;Kamchatka, T;Yakutsk","T;Kamchatka, T;Japan",
+                    "T;Ural, T;Afghanistan","T;Ural, T;Siberia","T;Ural, T;China",
+                    "T;Yakutsk, T;Irkutsk","T;Yakutsk, T;Kamchatka","T;Yakutsk, T;Siberia",
+                    "T;Middle East, T;Afghanistan","T;Middle East, T;India",
+                    "T;Mongolia, T;China","T;Mongolia, T;Irkutsk","T;Mongolia, T;Japan","T;Mongolia, T;Kamchatka","T;Mongolia, T;Siberia",
+                    # inside Oceania
+                    "T;Indonesia, T;Western Australia", "T;Indonesia, T;New Guinea",
+                    "T;New Guinea, T;Eastern Australia","T;New Guinea, T;Indonesia","T;New Guinea, T;Western Australia",
+                    "T;Eastern Australia, T;New Guinea","T;Eastern Australia, T;Western Australia",
+                    "T;Western Australia, T;Eastern Australia","T;Western Australia, T;New Guinea","T;Western Australia, T;Indonesia",
+                    # North america border
+                    "T;Kamchatka, T;Alaska", "T;Alaska, T;Kamchatka",
+                    "T;Greenland, T;Iceland","T;Iceland, T;Greenland",
+                    "T;Mexico, T;Venezuala", "T;Venezuala, T;Mexico",
+                    # South america border
+                    "T;Brazil, T;North Africa", "T;North Africa, T;Brazil",
+                    # Europe border
+                    "T;Middle East, T;Southern Europe", "T;Southern Europe, T;Middle East",
+                    "T;Middle East, T;Ukraine", "T;Ukraine, T;Middle East",
+                    "T;Egypt, T;Southern Europe", "T;Southern Europe, T;Egypt",
+                    "T;Southern Europe, T;North Africa", "T;North Africa, T;Southern Europe",
+                    "T;Ukraine, T;Ural", "T;Ural, T;Ukraine",
+                    "T;North Africa, T;Western Europe", "T;Western Europe, T;North Africa",
+                    "T;Afghanistan, T;Ukraine","T;Ukraine, T;Afghanistan",
+                    # Africa border
+                    "T;East Africa, T;Middle East", "T;Egypt, T;Middle East",
+                    "T;Middle East, T;Egypt", "T;Middle East, T;East Africa",
+                    # Asia - Oceania
+                    "T;Indonesia, T;South East Asia", "T;South East Asia, T;Indonesia"]
+
+
+
+
+
+
+
+
 
 
 
@@ -33,7 +136,10 @@ class Game(object):
         self.world = World()
         self.world.load(self.options['areas'], self.options['connect'])
 
+        self.board_state = None
         self.players = {}
+        self.player_to_id={}
+
 
         self.turn = 0
         self.turn_order = []
@@ -72,7 +178,6 @@ class Game(object):
         Calling this method triggers the display to be updated, and any AI
         players that have implemented event() to be notified.
         """
-
         self.display.update(msg, territory=territory, player=player)
 
         LOG.info([str(m) for m in msg])
@@ -83,10 +188,17 @@ class Game(object):
         assert 2 <= len(self.players) <= 5
         self.turn_order = list(self.players)
         random.shuffle(self.turn_order)
+
+        for i, player in enumerate(self.turn_order):
+            self.player_to_id.update({player:i})
+
         for i, name in enumerate(self.turn_order):
             #self.players[name].color = i + 1
-            self.players[name].ord = ord('\/-|+*'[i])
+            #self.players[name].ord = ord('\/-|+*'[i])   ## bullshit
             self.players[name].ai.start()
+
+        self.board_state = np.zeros((len(self.players), 42)) #42 territories
+
         self.event(("start", ))
         live_players = len(self.players)
         self.initial_placement()
@@ -109,6 +221,10 @@ class Game(object):
                         continue
                     t.forces += f
                     self.event(("reinforce", self.player, t, f), territory=[t], player=[self.player.name])
+                    #update board state
+                    player_id = self.player_to_id[self.player.name]
+                    territory_id = territories.index(t.name)
+                    self.board_state[player_id, territory_id]+=f
 
                 for src, target, attack, move in self.player.ai.attack():
                     st = self.world.territory(src)
@@ -133,6 +249,19 @@ class Game(object):
                     victory = self.combat(st, tt, attack, move)
                     final_forces = (st.forces, tt.forces)
                     self.event(("conquer" if victory else "defeat", self.player, opponent, st, tt, initial_forces, final_forces), territory=[st, tt], player=[self.player.name, tt.owner.name])
+                    attacker_id = self.player_to_id[self.player.name]
+                    defender_id = self.player_to_id[opponent.name]
+                    att_territory_id = territories.index(st.name)
+                    def_territory_id = territories.index(tt.name)
+                    if victory:
+                        self.board_state[attacker_id, att_territory_id]=final_forces[0]
+                        self.board_state[attacker_id, def_territory_id]=final_forces[1]
+                        self.board_state[defender_id, def_territory_id]=0
+                    else:
+                        self.board_state[attacker_id, att_territory_id]=final_forces[0]
+                        self.board_state[defender_id, def_territory_id]=final_forces[1]
+
+
                 freemove = self.player.ai.freemove()
                 if freemove:
                     src, target, count = freemove
@@ -159,6 +288,13 @@ class Game(object):
                         st.forces -= count
                         tt.forces += count
                         self.event(("move", self.player, st, tt, count), territory=[st, tt], player=[self.player.name])
+                        # update board
+                        player_id = self.player_to_id[self.player.name]
+                        src_territory_id = territories.index(st.name)
+                        dest_territory_id = territories.index(tt.name)
+                        self.board_state[player_id, src_territory_id]-=count
+                        self.board_state[player_id, dest_territory_id]+=count
+
                 live_players = len([p for p in self.players.values() if p.alive])
             self.turn += 1
             if self.turn>1000:
@@ -166,7 +302,7 @@ class Game(object):
                 break
         winner = [p for p in self.players.values() if p.alive][0]
         #if stalemate:
-        #        winner.name='Stale Horse'
+        # winner.name='Stale Horse'
         self.event(("victory", winner), player=[self.player.name])
         for p in self.players.values():
             p.ai.end()
@@ -225,6 +361,10 @@ class Game(object):
                 remaining[self.player.name] -= 1
                 t.owner = self.player
                 self.event(("deal", self.player, t), territory=[t], player=[self.player.name])
+                # update board
+                player_id = self.player_to_id[self.player.name]
+                territory_id = territories.index(t.name)
+                self.board_state[player_id, territory_id]+=1
                 self.turn += 1
         else:
             while empty:
@@ -243,6 +383,11 @@ class Game(object):
                 remaining[self.player.name] -= 1
                 empty.remove(t)
                 self.event(("claim", self.player, t), territory=[t], player=[self.player.name])
+                # update board
+                player_id = self.player_to_id[self.player.name]
+                territory_id = territories.index(t.name)
+                self.board_state[player_id, territory_id]+=1
+
                 self.turn += 1
 
         while sum(remaining.values()) > 0:
@@ -260,4 +405,8 @@ class Game(object):
                 t.forces += 1
                 remaining[self.player.name] -= 1
                 self.event(("reinforce", self.player, t, 1), territory=[t], player=[self.player.name])
+                # update board
+                player_id = self.player_to_id[self.player.name]
+                territory_id = territories.index(t.name)
+                self.board_state[player_id,territory_id]+=1
                 self.turn += 1

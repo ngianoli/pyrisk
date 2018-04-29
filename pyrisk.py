@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-
+import numpy as np
 import logging
 import random
 import importlib
+import os
 import re
 import collections
 import curses
@@ -18,6 +19,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--nocurses", dest="curses", action="store_false", default=True, help="Disable the ncurses map display")
 parser.add_argument("--nocolor", dest="color", action="store_false", default=True, help="Display the map without colors")
 parser.add_argument("-l", "--log", action="store_true", default=False, help="Write game events to a logfile")
+parser.add_argument("-f", "--folder", type=str, default='logfiles', help="Folder where to store the logfile")
 parser.add_argument("-d", "--delay", type=float, default=0.1, help="Delay in seconds after each action is displayed")
 parser.add_argument("-s", "--seed", type=int, default=None, help="Random number generator seed")
 parser.add_argument("-g", "--games", type=int, default=1, help="Number of rounds to play")
@@ -31,7 +33,9 @@ args = parser.parse_args()
 
 LOG.setLevel(logging.DEBUG)
 if args.log:
-    logging.basicConfig(filename="pyrisk.log", filemode="w")
+    os.makedirs(args.folder, exist_ok=True)
+    path = '/'.join([args.folder, "pyrisk.log"])
+    logging.basicConfig(filename=path, filemode="w")
 elif not args.curses:
     logging.basicConfig()
 
@@ -47,50 +51,25 @@ for p in args.players:
         #import mechanism
         #we expect a particular filename->classname mapping such that
         #ExampleAI resides in ai/example.py, FooAI in ai/foo.py etc.
-
         name, color = match.group(1).split('_')
+        package = name[:-2].lower()
         if color in ['red', 'green', 'blue', 'yellow', 'purple']:
             my_colors.append(color)
         else:
             raise Exception("Color not recognized : {}".format(color))
 
-        #name = match.group(1)
-        package = name[:-2].lower()
-
-        color
-
         try:
             klass = getattr(importlib.import_module("ai."+package), name)
             player_classes.append(klass)
-
         except:
             print("Unable to import AI %s from ai/%s.py" % (name, package))
             raise
 
-'''
-for p in args.players:
-    match = re.match(r"(\w+)?(\*\d+)?", p)
-    if match:
-        #import mechanism
-        #we expect a particular filename->classname mapping such that
-        #ExampleAI resides in ai/example.py, FooAI in ai/foo.py etc.
-        name = match.group(1)
-        package = name[:-2].lower()
-        if match.group(2):
-            count = int(match.group(2)[1:])
-        else:
-            count = 1
-        try:
-            klass = getattr(importlib.import_module("ai."+package), name)
-            for i in range(count):
-                player_classes.append(klass)
-        except:
-            print("Unable to import AI %s from ai/%s.py" % (name, package))
-            raise
-'''
 
 kwargs = dict(curses=args.curses, color=args.color, delay=args.delay,
-              connect=CONNECT, cmap=MAP, ckey=KEY, areas=AREAS, wait=args.wait, deal=args.deal)
+              connect=CONNECT, cmap=MAP, ckey=KEY, areas=AREAS,
+              wait=args.wait, deal=args.deal)
+
 def wrapper(stdscr, **kwargs):
     g = Game(screen=stdscr, **kwargs)
     for i, klass in enumerate(player_classes):

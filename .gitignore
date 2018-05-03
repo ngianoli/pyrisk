@@ -1,3 +1,6 @@
 *.pyc
 *~
 .DS_Store
+logfiles/
+model_files/
+game_files/

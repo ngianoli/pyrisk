@@ -14,18 +14,45 @@ class Q_network(object):
         self.sess = sess
         self.optimizer = optimizer
         self.name = name
-        hid_units_1 = 128
-        hid_units_2 = 256
-        output_units = 167
+        n_input = 126
+        n_hidden_1 = 128
+        n_hidden_2 = 256
+        n_output = 167
 
-        self.input_boards = tf.placeholder(tf.float32, shape=[None, 126])
+        self.input_boards = tf.placeholder(tf.float32, shape=[None, n_input])
         self.actions = tf.placeholder(tf.int32, [None])
         self.targets = tf.placeholder(tf.float32, [None])
 
+        # Store layers weight & bias
+        weights = {
+            'h1': tf.Variable(tf.random_normal([n_input, n_hidden_1])),
+            'h2': tf.Variable(tf.random_normal([n_hidden_1, n_hidden_2])),
+            'out': tf.Variable(tf.random_normal([n_hidden_2, n_output]))
+        }
+        biases = {
+            'b1': tf.Variable(tf.random_normal([n_hidden_1])),
+            'b2': tf.Variable(tf.random_normal([n_hidden_2])),
+            'out': tf.Variable(tf.random_normal([n_output]))
+        }
+
+        """
         # network
         layer_1 = tf.layers.dropout(tf.layers.dense(self.input_boards, hid_units_1, activation=tf.nn.relu), rate=0.2)
         layer_2 = tf.layers.dropout(tf.layers.dense(layer_1, hid_units_2, activation=tf.nn.relu), rate=0.2)
         self.scores = tf.layers.dense(layer_1, action_space, activation=tf.nn.softmax)
+        """
+
+        # Create model
+        # Hidden layer with RELU activation and dropout
+        z_1 = tf.add(tf.matmul(self.input_boards, weights['h1']), biases['b1'])
+        layer_1 = tf.layers.dropout(tf.nn.relu(z_1), rate=0.2)
+        # Hidden layer with RELU activation
+        z_2 = tf.add(tf.matmul(layer_1, weights['h2']), biases['b2'])
+        layer_2 = tf.layers.dropout(tf.nn.relu(z_2), rate=0.2)
+        # Output layer with linear activation and dropout
+        z_out = tf.add(tf.matmul(layer_2, weights['out']), biases['out'])
+        self.scores = tf.nn.softmax(z_out)
+
 
         actions_scores = tf.reduce_sum(self.scores*tf.one_hot(self.actions, action_space), axis = 1)
 

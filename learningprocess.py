@@ -51,17 +51,17 @@ def main(NAME):
         sess.run(tf.global_variables_initializer())
         global_episode=0
         #save model
-        Q_main.save(save_path='{}episode_{}/main'.format(model_path,global_episode))
-        Q_target.save(save_path='{}episode_{}/target'.format(model_path,global_episode))
+        Q_main.save('{}episode_{}/main'.format(model_path,global_episode))
+        Q_target.save('{}episode_{}/target'.format(model_path,global_episode))
         #save main for agent
-        Q_main.save(save_path=main_model_path)
+        Q_main.save(main_model_path)
     else:
         global_episode = max(model_list)
         #save model
         Q_main.restore('{}episode_{}/main'.format(model_path,global_episode))
         Q_target.restore('{}episode_{}/target'.format(model_path,global_episode))
         #save main for agent
-        Q_main.save(save_path=main_model_path)
+        Q_main.save(main_model_path)
 
     sess.run(update)
 
@@ -80,8 +80,8 @@ def main(NAME):
 
         # save model every 100 episodes = every 1000 games
         if not global_episode%100:
-            Q_main.save(save_path='{}episode_{}/main'.format(model_path,global_episode))
-            Q_target.save(save_path='{}episode_{}/target'.format(model_path,global_episode))
+            Q_main.save('{}episode_{}/main'.format(model_path,global_episode))
+            Q_target.save('{}episode_{}/target'.format(model_path,global_episode))
 
         #play 10 games
         os.system('python pyrisk.py {}AI_blue {}AI_red {}AI_green -g 2 --nocurse -l'.format(NAME, NAME, NAME)) # can be parallelized
@@ -120,7 +120,7 @@ def main(NAME):
             Q_main.train(states, actions, targets)
 
         #save Q_main for agents
-        Q_main.save(save_path=main_model_path)
+        Q_main.save(main_model_path)
 
         # update Q_target
         sess.run(update)

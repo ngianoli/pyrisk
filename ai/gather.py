@@ -7,7 +7,10 @@ import random
 import collections
 import curses
 import time
+import os
 from Q_network import *
+import pandas as pd
+
 
 
 
@@ -92,36 +95,33 @@ possible_attacks = ["no attack",
                     "Indonesia->South East Asia", "South East Asia->Indonesia"]
 
 
-
 # initialize
 board_size = 3*42 #3*len(territories) # we assume 3 players
-action_space = len(possible_attacks)
+action_size = len(possible_attacks)
 learning_rate =0.001
 
-load_session = False
+model_path = 'model_files/Gather/current/'
+
+
 sess = tf.Session()
-
-
 # optimizer
 optimizer = tf.train.AdamOptimizer(learning_rate)
-
 # initialize network
-with tf.variable_scope("principal"):
-    Q_net = Q_network(board_size, action_space, sess, optimizer)
+Q_main = Q_network(board_size, action_size, sess, optimizer, name='main')
+Q_main.restore(model_path)
 
 
+"""
+# initialize network
+with tf.variable_scope("main"):
+    Q_main = Q_network(board_size, action_size, sess, optimizer, name='main')
+with tf.variable_scope("target"):
+    Q_target = Q_network(board_size, action_size, sess, optimizer, name='target')
 
-if load_session == True:
-    saver.restore(sess, "/Users/ngianoli/Desktop/Risk_project/model.ckpt")
-else:
-    sess.run(tf.global_variables_initializer())
-#buffer = ReplayBuffer(maxlength)
+# init variables
 saver = tf.train.Saver()
-
-
-action_data, board_data, rewards_data = [], [], []
-
-
+saver.restore(sess, model_path)
+"""
 
 class GatherAI(AI):
     """
@@ -130,6 +130,9 @@ class GatherAI(AI):
 
     def start(self):
         self.turn = self.game.turn_order.index(self.player.name)
+        self.board_data = []
+        self.action_data = []
+        self.rewards_data = []
 
     # random action for initial placement & reinforcement phase & freemove
     # not the main focus for now
@@ -164,29 +167,66 @@ class GatherAI(AI):
             # load board state and reshape to have this player in first position
             board = self.game.board_state
             my_board = np.reshape( np.vstack((board[self.turn:len(board)], board[:self.turn])) , (1, -1))
-            #compute scores
-            attack_scores = Q_net.compute_scores(my_board)
-            attack_scores = np.squeeze(attack_scores)
-
             controled_territories=[t.name for t in self.player.territories]
 
-            valid_att = False
-            while not valid_att:
-                attack_id = np.random.choice(action_space, p=attack_scores)
-                """
-                # when trained
-                attack_id = np.argmax(final_probs)
-                """
-                if attack_id == 0:
-                    board_data.append(my_board)
-                    action_data.append(attack_id)
+            #compute scores
+            attack_scores = Q_main.compute_scores(my_board)
+            attack_scores = np.squeeze(attack_scores)
+
+            if attack_scores[0]==0:
+                attack_ids = np.argsort(-attack_scores)
+            else:
+                N_non_zeros = np.count_nonzero(attack_scores)
+                attack_ids = np.random.choice(action_size, size=N_non_zeros,
+                                replace=False, p=attack_scores)
+            """
+            # when trained
+            attack_ids = np.argsort(-attack_scores)]
+            """
+
+            # then we need to choose a valid attack
+            for i in range(action_size):
+                #attack_id = np.random.choice(action_size, p=attack_scores)
+                attack_id = attack_ids[i]
+
+                if attack_id == 0: # it means no attack
+                    self.board_data.append(my_board)
+                    self.action_data.append(attack_id)
                     valid_att = True
                     Attacking = False
                     return None
                 else:
                     src, dst = possible_attacks[attack_id].split('->')
                     if (src in controled_territories) and (dst not in controled_territories) and (self.world.territory(src).forces>1):
-                        valid_att = True
-                        board_data.append(my_board)
-                        action_data.append(attack_id)
-                        yield (src, dst, None, None) # full attack for now, we will see in the future if we can choose a more advanced strategy
+                        break
+
+            self.board_data.append(my_board)
+            self.action_data.append(attack_id)
+            yield (src, dst, None, None) # full attack for now, we will see in the future if we can choose a more advanced strategy
+
+
+    # to give rewards
+    def event(self, msg):
+        # strategy 1 : reward at the end
+        statement = msg[0]
+        if statement == "victory":
+            winner = msg[1].name
+            self.rewards_data = [0]*(len(self.action_data)-1)
+            if self.player.name == winner:
+                self.rewards_data.append(100)
+            else:
+                self.rewards_data.append(-20)
+
+            # save game:
+            game_data = pd.DataFrame(np.squeeze(self.board_data), dtype=np.uint8)
+            game_data['action'] = self.action_data
+            game_data['reward'] = self.rewards_data
+
+            os.makedirs("game_files/{}".format(self.player.name), exist_ok=True)
+            i = 0
+            path = "game_files/{}/game_{}.csv".format(self.player.name, i)
+            while os.path.exists(path):
+                i += 1
+                path = "game_files/{}/game_{}.csv".format(self.player.name, i)
+
+            game_data.to_csv(path_or_buf= path, sep=',', header=False, index=False)

@@ -16,23 +16,7 @@ def play_games(params, Q_network, buffer):
     # params contain n_games, players_input, deal
     LOG = logging.getLogger("pyrisk")
 
-
     kwargs = dict(connect=CONNECT, cmap=MAP, ckey=KEY, areas=AREAS, deal=params['deal'])
-
-
-
-    #parser = argparse.ArgumentParser()
-    #parser.add_argument("-l", "--log", action="store_true", default=False, help="Write game events to a logfile")
-    #parser.add_argument("-f", "--folder", type=str, default='logfiles', help="Folder where to store the logfile")
-    #parser.add_argument("-d", "--delay", type=float, default=0.1, help="Delay in seconds after each action is displayed")
-    #parser.add_argument("-s", "--seed", type=int, default=None, help="Random number generator seed")
-    #parser.add_argument("-g", "--games", type=int, default=1, help="Number of rounds to play")
-    #parser.add_argument("players", nargs="+", help="Names of the AI classes to use. May use 'ExampleAI*3' syntax.")
-    #parser.add_argument("--deal", action="store_true", default=True, help="Deal territories rather than letting players choose")
-
-    #args = parser.parse_args()
-
-
 
     LOG.setLevel(logging.DEBUG)
     arglog=False
@@ -41,9 +25,6 @@ def play_games(params, Q_network, buffer):
         os.makedirs(args.folder, exist_ok=True)
         path = '/'.join([args.folder, "pyrisk.log"])
         logging.basicConfig(filename=path, filemode="w")
-
-    #elif not args_curses:
-    #    logging.basicConfig()
 
     args_seed = None
     if args_seed is not None:

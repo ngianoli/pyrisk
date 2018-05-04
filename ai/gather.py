@@ -98,30 +98,7 @@ possible_attacks = ["no attack",
 # initialize
 board_size = 3*42 #3*len(territories) # we assume 3 players
 action_size = len(possible_attacks)
-#learning_rate =0.001
 
-#model_path = 'model_files/Gather/current/model'
-
-'''
-sess = tf.Session()
-
-# load variables
-loader = tf.train.import_meta_graph('{}.meta'.format(model_path))
-loader.restore(sess, model_path)
-graph = tf.get_default_graph()
-variables={}
-for var in graph.get_collection('trainable_variables'):
-    key = var.name.split(':')[0]
-    if key in variables.keys():
-        raise ValueError
-    variables.update({var.name.split(':')[0] : var})
-
-# optimizer
-optimizer = tf.train.AdamOptimizer(learning_rate)
-# initialize network
-Q_main = Q_network(board_size, action_size, sess, optimizer, variables)
-
-'''
 
 class GatherAI(AI):
     """
@@ -216,21 +193,6 @@ class GatherAI(AI):
             else:
                 self.rewards_data.append(-20)
 
-            """
-            # save game:
-            game_data = pd.DataFrame(np.squeeze(self.board_data), dtype=np.uint8)
-            game_data['action'] = self.action_data
-            game_data['reward'] = self.rewards_data
-
-            os.makedirs("game_files/{}".format(self.player.name), exist_ok=True)
-            i = 0
-            path = "game_files/{}/game_{}.csv".format(self.player.name, i)
-            while os.path.exists(path):
-                i += 1
-                path = "game_files/{}/game_{}.csv".format(self.player.name, i)
-
-            game_data.to_csv(path_or_buf= path, sep=',', header=False, index=False)
-            """
 
             # transfer directly to buffer:
             for i in range(N-1):

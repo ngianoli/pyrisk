@@ -21,8 +21,6 @@ class Q_network(object):
         self.actions = tf.placeholder(tf.int32, [None])
         self.targets = tf.placeholder(tf.float32, [None])
 
-
-
         n_hidden_1 = 128
         n_hidden_2 = 256
         default_variables = {
@@ -34,13 +32,6 @@ class Q_network(object):
             'b_out': tf.Variable(tf.random_normal([action_size]), name='bout_{}'.format(self.name))
         }
 
-
-        '''
-        n_input = 126
-        n_hidden_1 = 128
-        n_hidden_2 = 256
-        n_output = 167
-        '''
 
         if variables==None:
             self.variables = default_variables.copy()
@@ -65,18 +56,11 @@ class Q_network(object):
         self.loss = tf.reduce_mean(tf.square(actions_scores - self.targets))
         self.train_op = self.optimizer.minimize(self.loss)
 
-        #add saver:
-        #self.saver = tf.train.Saver(self.variables, max_to_keep=1)
-
-
     def compute_scores(self, boards):
         return self.sess.run(self.scores, feed_dict={self.input_boards: boards})
 
     def train(self, boards, actions, targets):
         return self.sess.run([self.loss, self.train_op], feed_dict={self.input_boards:boards, self.actions:actions, self.targets:targets})
-
-    #def save(self, path):
-        #self.saver.save(sess=self.sess, save_path=path)
 
 
 #  subroutine to update target network i.e. to copy from principal network to target network

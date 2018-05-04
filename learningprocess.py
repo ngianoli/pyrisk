@@ -17,8 +17,6 @@ import argparse
 import pyrisk_callable
 
 
-
-
 def main(params):
     NAME = params['ai_name']
     global_episode=params['restart_episode']
@@ -49,14 +47,6 @@ def main(params):
     model_path = 'model_files/{}'.format(NAME)
     os.makedirs(model_path, exist_ok=True)
 
-    """
-    # init variables
-    model_list = []
-    for file in os.listdir(model_path):
-        if len(file)>7:
-            if file[:7]=='episode':
-                model_list.append(int(file.split('_')[1]))
-    """
 
     if global_episode==0:
         sess.run(tf.global_variables_initializer())

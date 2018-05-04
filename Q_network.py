@@ -10,58 +10,63 @@ import time
 from collections import deque
 
 class Q_network(object):
-    def __init__(self, board_size, action_space, sess, optimizer, name='net'):
+
+    def __init__(self, board_size, action_size, sess, optimizer, name, variables=None):
+
         self.sess = sess
         self.optimizer = optimizer
-        self.name = name
+        self.name=name
+
+        self.input_boards = tf.placeholder(tf.float32, shape=[None, board_size])
+        self.actions = tf.placeholder(tf.int32, [None])
+        self.targets = tf.placeholder(tf.float32, [None])
+
+
+
+        n_hidden_1 = 128
+        n_hidden_2 = 256
+        default_variables = {
+            'h1': tf.Variable(tf.random_normal([board_size, n_hidden_1]), name='h1_{}'.format(self.name)),
+            'h2': tf.Variable(tf.random_normal([n_hidden_1, n_hidden_2]), name='h2_{}'.format(self.name)),
+            'h_out': tf.Variable(tf.random_normal([n_hidden_2, action_size]), name='hout_{}'.format(self.name)),
+            'b1': tf.Variable(tf.random_normal([n_hidden_1]), name='b1_{}'.format(self.name)),
+            'b2': tf.Variable(tf.random_normal([n_hidden_2]), name='b2_{}'.format(self.name)),
+            'b_out': tf.Variable(tf.random_normal([action_size]), name='bout_{}'.format(self.name))
+        }
+
+
+        '''
         n_input = 126
         n_hidden_1 = 128
         n_hidden_2 = 256
         n_output = 167
+        '''
 
-        self.input_boards = tf.placeholder(tf.float32, shape=[None, n_input])
-        self.actions = tf.placeholder(tf.int32, [None])
-        self.targets = tf.placeholder(tf.float32, [None])
-
-        # Store layers weight & bias
-        weights = {
-            'h1': tf.Variable(tf.random_normal([n_input, n_hidden_1])),
-            'h2': tf.Variable(tf.random_normal([n_hidden_1, n_hidden_2])),
-            'out': tf.Variable(tf.random_normal([n_hidden_2, n_output]))
-        }
-        biases = {
-            'b1': tf.Variable(tf.random_normal([n_hidden_1])),
-            'b2': tf.Variable(tf.random_normal([n_hidden_2])),
-            'out': tf.Variable(tf.random_normal([n_output]))
-        }
-
-        """
-        # network
-        layer_1 = tf.layers.dropout(tf.layers.dense(self.input_boards, hid_units_1, activation=tf.nn.relu), rate=0.2)
-        layer_2 = tf.layers.dropout(tf.layers.dense(layer_1, hid_units_2, activation=tf.nn.relu), rate=0.2)
-        self.scores = tf.layers.dense(layer_1, action_space, activation=tf.nn.softmax)
-        """
+        if variables==None:
+            self.variables = default_variables.copy()
+        else:
+            self.variables=variables
 
         # Create model
         # Hidden layer with RELU activation and dropout
-        z_1 = tf.add(tf.matmul(self.input_boards, weights['h1']), biases['b1'])
+        z_1 = tf.add(tf.matmul(self.input_boards, self.variables['h1']), self.variables['b1'])
         layer_1 = tf.layers.dropout(tf.nn.relu(z_1), rate=0.2)
         # Hidden layer with RELU activation
-        z_2 = tf.add(tf.matmul(layer_1, weights['h2']), biases['b2'])
+        z_2 = tf.add(tf.matmul(layer_1, self.variables['h2']), self.variables['b2'])
         layer_2 = tf.layers.dropout(tf.nn.relu(z_2), rate=0.2)
         # Output layer with linear activation and dropout
-        z_out = tf.add(tf.matmul(layer_2, weights['out']), biases['out'])
+        z_out = tf.add(tf.matmul(layer_2, self.variables['h_out']), self.variables['b_out'])
         self.scores = tf.nn.softmax(z_out)
 
 
-        actions_scores = tf.reduce_sum(self.scores*tf.one_hot(self.actions, action_space), axis = 1)
+        actions_scores = tf.reduce_sum(self.scores*tf.one_hot(self.actions, action_size), axis = 1)
 
         # optimization
         self.loss = tf.reduce_mean(tf.square(actions_scores - self.targets))
         self.train_op = self.optimizer.minimize(self.loss)
 
         #add saver:
-        self.saver = tf.train.Saver()
+        #self.saver = tf.train.Saver(self.variables, max_to_keep=1)
 
 
     def compute_scores(self, boards):
@@ -70,11 +75,8 @@ class Q_network(object):
     def train(self, boards, actions, targets):
         return self.sess.run([self.loss, self.train_op], feed_dict={self.input_boards:boards, self.actions:actions, self.targets:targets})
 
-    def save(self, path):
-        self.saver.save(sess=self.sess, save_path=path)
-
-    def restore(self, path):
-        self.saver.save(sess=self.sess, save_path=path)
+    #def save(self, path):
+        #self.saver.save(sess=self.sess, save_path=path)
 
 
 #  subroutine to update target network i.e. to copy from principal network to target network
@@ -117,9 +119,9 @@ class ReplayBuffer(object):
         N = experience_frame.shape[0]
         # each frame correspond to a game
         for i in range(N-1):
-            self.buffer.append(boards.loc[i], actions[i], rewards[i], boards.loc[i+1])
+            self.buffer.append((boards.loc[i], actions[i], rewards[i], boards.loc[i+1]))
             self.length += 1
-        self.buffer.append(boards.loc[N], actions[N], rewards[N], boards.loc[N])
+        self.buffer.append((boards.loc[N], actions[N], rewards[N], boards.loc[N]))
         self.length += 1
 
     def pop(self):

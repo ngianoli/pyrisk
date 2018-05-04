@@ -98,30 +98,30 @@ possible_attacks = ["no attack",
 # initialize
 board_size = 3*42 #3*len(territories) # we assume 3 players
 action_size = len(possible_attacks)
-learning_rate =0.001
+#learning_rate =0.001
 
-model_path = 'model_files/Gather/current/'
+#model_path = 'model_files/Gather/current/model'
 
-
+'''
 sess = tf.Session()
+
+# load variables
+loader = tf.train.import_meta_graph('{}.meta'.format(model_path))
+loader.restore(sess, model_path)
+graph = tf.get_default_graph()
+variables={}
+for var in graph.get_collection('trainable_variables'):
+    key = var.name.split(':')[0]
+    if key in variables.keys():
+        raise ValueError
+    variables.update({var.name.split(':')[0] : var})
+
 # optimizer
 optimizer = tf.train.AdamOptimizer(learning_rate)
 # initialize network
-Q_main = Q_network(board_size, action_size, sess, optimizer, name='main')
-Q_main.restore(model_path)
+Q_main = Q_network(board_size, action_size, sess, optimizer, variables)
 
-
-"""
-# initialize network
-with tf.variable_scope("main"):
-    Q_main = Q_network(board_size, action_size, sess, optimizer, name='main')
-with tf.variable_scope("target"):
-    Q_target = Q_network(board_size, action_size, sess, optimizer, name='target')
-
-# init variables
-saver = tf.train.Saver()
-saver.restore(sess, model_path)
-"""
+'''
 
 class GatherAI(AI):
     """
@@ -160,9 +160,7 @@ class GatherAI(AI):
         return None
 
     def attack(self):
-
         Attacking = True
-
         while Attacking:
             # load board state and reshape to have this player in first position
             board = self.game.board_state
@@ -170,7 +168,7 @@ class GatherAI(AI):
             controled_territories=[t.name for t in self.player.territories]
 
             #compute scores
-            attack_scores = Q_main.compute_scores(my_board)
+            attack_scores = self.game.Q_network.compute_scores(my_board)
             attack_scores = np.squeeze(attack_scores)
 
             if attack_scores[0]==0:
@@ -204,19 +202,21 @@ class GatherAI(AI):
             self.action_data.append(attack_id)
             yield (src, dst, None, None) # full attack for now, we will see in the future if we can choose a more advanced strategy
 
-
     # to give rewards
     def event(self, msg):
         # strategy 1 : reward at the end
         statement = msg[0]
         if statement == "victory":
             winner = msg[1].name
-            self.rewards_data = [0]*(len(self.action_data)-1)
+            N = len(self.action_data)
+
+            self.rewards_data = [0]*(N-1)
             if self.player.name == winner:
                 self.rewards_data.append(100)
             else:
                 self.rewards_data.append(-20)
 
+            """
             # save game:
             game_data = pd.DataFrame(np.squeeze(self.board_data), dtype=np.uint8)
             game_data['action'] = self.action_data
@@ -230,3 +230,11 @@ class GatherAI(AI):
                 path = "game_files/{}/game_{}.csv".format(self.player.name, i)
 
             game_data.to_csv(path_or_buf= path, sep=',', header=False, index=False)
+            """
+
+            # transfer directly to buffer:
+            for i in range(N-1):
+                self.game.buffer.append((self.board_data[i], self.action_data[i],
+                        self.rewards_data[i], self.board_data[i+1]))
+            self.game.buffer.append((self.board_data[N-1], self.action_data[N-1],
+                    self.rewards_data[N-1], self.board_data[N-1]))

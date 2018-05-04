@@ -9,12 +9,6 @@ import numpy as np
 
 
 
-
-
-
-
-
-
 territories = ["Alaska","Northwest Territories","Greenland","Alberta","Ontario","Quebec","Western United States","Eastern United States","Mexico",
                "Venezuala","Peru","Argentina","Brazil",
                "Iceland","Great Britain","Scandanavia","Western Europe","Northern Europe","Southern Europe","Ukraine",
@@ -106,11 +100,6 @@ possible_attacks = ["no attack",
 
 
 
-
-
-
-
-
 class Game(object):
     """
     This class represents an individual game, and contains the main game logic.
@@ -129,6 +118,7 @@ class Game(object):
         "history": {}, #the win/loss history for each player, for multiple rounds
         "deal": False #deal out territories rather than let players choose
     }
+
     def __init__(self, **options):
         self.options = self.defaults.copy()
         self.options.update(options)

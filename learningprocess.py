@@ -35,42 +35,62 @@ def main(params):
     sess = tf.Session()
     # optimizer
     optimizer = tf.train.AdamOptimizer(learning_rate)
-    # initialize network
-    with tf.variable_scope("main"):
-        Q_main = Q_network(board_size, action_size, sess, optimizer, 'main')
-    with tf.variable_scope("target"):
-        Q_target = Q_network(board_size, action_size, sess, optimizer, 'target')
-    # build ops
-    update = build_target_update("main", "target")  # call sess.run(update) to copy from principal to target
 
-    model_saver = tf.train.Saver(max_to_keep=1)
+
     model_path = 'model_files/{}'.format(NAME)
     os.makedirs(model_path, exist_ok=True)
 
 
     if global_episode==0:
+        # initialize network
+        with tf.variable_scope("main"):
+            Q_main = Q_network(board_size, action_size, sess, optimizer, 'main')
+        with tf.variable_scope("target"):
+            Q_target = Q_network(board_size, action_size, sess, optimizer, 'target')
+
         sess.run(tf.global_variables_initializer())
         #save model
+        model_saver = tf.train.Saver(max_to_keep=1)
         model_saver.save(sess, '{}/episode_{}/model'.format(model_path,global_episode))
-    elif global_episode==2:
-        model_saver.restore(sess, '{}/episode_{}/model'.format(model_path,0))
-        model_saver.save(sess, '{}/episode_{}/model'.format(model_path,global_episode))
-
 
     else :
-        #save model
-        Q_main.restore('{}episode_{}/main'.format(model_path,global_episode))
-        Q_target.restore('{}episode_{}/target'.format(model_path,global_episode))
+        loader = tf.train.import_meta_graph('{}/episode_{}/model.meta'.format(model_path,global_episode))
+        loader.restore(sess, '{}/episode_{}/model'.format(model_path,global_episode))
+        graph = tf.get_default_graph()
+        graph.get_collection('trainable_variables')
+
+        main_vars = {}
+        for var in graph.get_collection('trainable_variables'):
+            if var.name[:4]=='main':
+                ref = var.name.split('/')[1][:-7])
+                if ref in ['h1','h2','hout','b1','b2','bout']: # security check
+                    main_vars.update({ref: tf.identity(var, name="{}_main".format(ref)) })
+
+        target_vars = {}
+        for var in graph.get_collection('trainable_variables'):
+            if var.name[:6]=='target':
+                ref = var.name.split('/')[1][:-9])
+                if ref in ['h1','h2','hout','b1','b2','bout']: # security check
+                    target_vars.update({ref: tf.identity(var, name="{}_target".format(ref)) })
 
 
+        # initialize network
+        with tf.variable_scope("main"):
+            Q_main = Q_network(board_size, action_size, sess, optimizer, 'main', variables= main_vars)
+        with tf.variable_scope("target"):
+            Q_target = Q_network(board_size, action_size, sess, optimizer, 'target', variables= target_vars)
+
+        model_saver = tf.train.Saver(max_to_keep=1)
+
+
+    # build ops
+    update = build_target_update("main", "target")  # call sess.run(update) to copy from principal to target
 
     sess.run(update)
 
 
-
     n_training_steps=10
     n_episodes = 5000
-
 
     for _ in range(n_episodes):
         global_episode+=1
@@ -80,19 +100,6 @@ def main(params):
 
         #play 10 games
         pyrisk_callable.play_games(params, Q_main, buffer)
-        #subprocess.call('python pyrisk.py {}AI_blue {}AI_red {}AI_green -g 2 --nocurse -l'.format(NAME, NAME, NAME)) # can be parallelized
-        """
-        data_to_gather =[]
-        for player in ['red', 'blue', 'green']:
-            folder = 'game_files/{}'.format(player)
-            for file in os.listdir(folder):
-                if file[:4]=='game':
-                    data_to_gather.append('{}/{}'.format(folder,file))
-
-        for path in data_to_gather:
-            buffer.append_frame(pd.read_csv(path, sep=',', header=None))
-            os.remove(path)
-        """
 
         for _ in range(n_training_steps):
             batch = buffer.sample(batchsize)
@@ -100,34 +107,15 @@ def main(params):
             actions = np.array([batch[i][1] for i in range(batchsize)])
             rewards = np.array([batch[i][2] for i in range(batchsize)])
             boards_prime = np.squeeze([batch[i][3] for i in range(batchsize)])
-            """
-            except ValueError:
-                print('###########################################')
-                print('###########################################')
-                print('###########################################')
-                print (data_to_gather)
-                print('###########################################')
-                print('###########################################')
-                print('###########################################')
-            """
+
             values = Q_target.compute_scores(boards_prime)
             max_prime = np.max(values, axis=1)
             targets = rewards + gamma*max_prime
             # train Q_main
             Q_main.train(boards, actions, targets)
 
-        """
-        #save Q_main for agents
-        Q_main.save(main_model_path)
-        """
-
         # soft update Q_target
         sess.run(update)
-
-
-
-
-
 
 
 

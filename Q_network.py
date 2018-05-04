@@ -11,7 +11,7 @@ from collections import deque
 
 class Q_network(object):
 
-    def __init__(self, board_size, action_size, sess, optimizer, name, variables=None):
+    def __init__(self, board_size, action_size, sess, optimizer=None, name='nemo', variables=None):
 
         self.sess = sess
         self.optimizer = optimizer
@@ -48,7 +48,6 @@ class Q_network(object):
         # Output layer with linear activation and dropout
         z_out = tf.add(tf.matmul(layer_2, self.variables['h_out']), self.variables['b_out'])
         self.scores = tf.nn.softmax(z_out)
-
 
         actions_scores = tf.reduce_sum(self.scores*tf.one_hot(self.actions, action_size), axis = 1)
 

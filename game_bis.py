@@ -103,16 +103,11 @@ class Game(object):
     This class represents an individual game, and contains the main game logic.
     """
     defaults = {
-        #"curses": False, #whether to use ncurses for map display
-        #"color": True, #whether to use color with ncurses
-        #"delay": 0.1, #seconds to sleep after each (ncurses) display update
         "connect": CONNECT, #the territory connection graph (see world.py)
         "areas": AREAS, #the territory->continent mapping, and values
         "cmap": MAP, #the ASCII art map to use
         "ckey": KEY, #the territority->char mapping key for the map
-        #"screen": None, #a curses.window (for use with the curses.wrapper function)
         "round": None, #the round number
-        #"wait": False, #whether to pause and wait for a keypress after each event
         "history": {}, #the win/loss history for each player, for multiple rounds
         "deal": True #deal out territories rather than let players choose
     }
@@ -143,7 +138,6 @@ class Game(object):
         else:
             """
         #self.display = Display()
-
 
     def add_player(self, name, ai_class, **ai_kwargs):
         assert name not in self.players

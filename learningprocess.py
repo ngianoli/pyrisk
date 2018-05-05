@@ -26,7 +26,7 @@ def main(params):
     action_size = 167 #len(possible_attacks)
     learning_rate =0.001
     gamma = .95  # discount
-    max_length=500000 # for the buffer
+    max_length=200000 # for the buffer
     n_training_steps = 10
     batchsize = 32
 
@@ -62,14 +62,14 @@ def main(params):
         main_vars = {}
         for var in graph.get_collection('trainable_variables'):
             if var.name[:4]=='main':
-                ref = var.name.split('/')[1][:-7])
+                ref = var.name.split('/')[1][:-7]
                 if ref in ['h1','h2','hout','b1','b2','bout']: # security check
                     main_vars.update({ref: tf.identity(var, name="{}_main".format(ref)) })
 
         target_vars = {}
         for var in graph.get_collection('trainable_variables'):
             if var.name[:6]=='target':
-                ref = var.name.split('/')[1][:-9])
+                ref = var.name.split('/')[1][:-9]
                 if ref in ['h1','h2','hout','b1','b2','bout']: # security check
                     target_vars.update({ref: tf.identity(var, name="{}_target".format(ref)) })
 
@@ -124,21 +124,16 @@ if __name__ == "__main__":
     # parsing argument
     parser = argparse.ArgumentParser()
 
-    #parser.add_argument("-l", "--log", action="store_true", default=False, help="Write game events to a logfile")
-    #parser.add_argument("-f", "--folder", type=str, default='logfiles', help="Folder where to store the logfile")
-    #parser.add_argument("-d", "--delay", type=float, default=0.1, help="Delay in seconds after each action is displayed")
-    #parser.add_argument("-s", "--seed", type=int, default=None, help="Random number generator seed")
-    parser.add_argument("-g", "--games", type=int, default=1, help="Number of rounds to play")
-    #parser.add_argument("-w", "--wait", action="store_true", default=False, help="Pause and wait for a keypress after each action")
-    #parser.add_argument("AI", nargs="+", help="Name of the AI class to use")
+    parser.add_argument("-g", "--games", type=int, default=10, help="Number of rounds to play")
     parser.add_argument("AI", help="Name of the AI class to use")
     parser.add_argument("--deal", action="store_false", default=True, help="Deal territories rather than letting players choose")
     parser.add_argument("--restart_episode", type=int, default=0, help="Number of rounds to play")
 
     args = parser.parse_args()
-    params = {'players':['{}AI_blue'.format(args.AI), '{}AI_green'.format(args.AI), '{}AI_red'.format(args.AI)],
+    params = {'players':['{}AI_red'.format(args.AI), '{}AI_blue'.format(args.AI), '{}AI_green'.format(args.AI)],
             'n_games': args.games, 'ai_name':args.AI, 'deal':args.deal, 'restart_episode':args.restart_episode
             }
+    print(params)
 
     #print(params)
 

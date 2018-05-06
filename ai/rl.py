@@ -153,16 +153,18 @@ class RlAI(AI):
             #else:
 
             # selecting the id of potential attacks with non zero scores
-            potential_ids = []
-            associated_scores = []
-            for id in range(action_size):
+            potential_ids = [0]
+            associated_scores = [attack_scores[0]]
+            for id in range(1, action_size):
                 src, dst = possible_attacks[id].split('->')
                 if (src in controled_territories) and (dst not in controled_territories) and (self.world.territory(src).forces>1):
                     potential_ids.append(id)
                     associated_scores.append(attack_scores[id])
 
-            sum_scores = sum(associated_scores)
-            att_proba = [score/sum_scores for score in associated_scores]
+            associated_scores = np.array(associated_scores)
+            att_proba = np.true_divide(associated_scores, np.sum(associated_scores))
+            #sum_scores = sum(associated_scores)
+            #att_proba = [score/sum_scores for score in associated_scores]
             """# rank with proba=scores
             attack_ids = np.random.choice(potential_ids, size=len(potential_ids),
                             replace=False, p=associated_scores)

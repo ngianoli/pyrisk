@@ -161,12 +161,14 @@ class RlAI(AI):
                     potential_ids.append(id)
                     associated_scores.append(attack_scores[id])
 
+            sum_scores = sum(associated_scores)
+            att_proba = [score/sum_scores for score in associated_scores]
             """# rank with proba=scores
             attack_ids = np.random.choice(potential_ids, size=len(potential_ids),
                             replace=False, p=associated_scores)
             """
             # choose with proba=scores
-            attack_id = np.random.choice(potential_ids, p=associated_scores)
+            attack_id = np.random.choice(potential_ids, p=att_proba)
             self.board_data.append(my_board)
             self.action_data.append(attack_id)
             if attack_id == 0: # it means no attack

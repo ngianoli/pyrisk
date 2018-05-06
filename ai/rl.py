@@ -148,17 +148,40 @@ class RlAI(AI):
             attack_scores = self.game.Q_network.compute_scores(my_board)
             attack_scores = np.squeeze(attack_scores)
 
-            if attack_scores[0]==0:
-                attack_ids = np.argsort(-attack_scores)
+            #if attack_scores[0]==0:
+            #    attack_ids = np.argsort(-attack_scores)
+            #else:
+
+            # selecting the id of potential attacks with non zero scores
+            potential_ids = []
+            associated_scores = []
+            for id in range(action_size):
+                src, dst = possible_attacks[id].split('->')
+                if (src in controled_territories) and (dst not in controled_territories) and (self.world.territory(src).forces>1):
+                    potential_ids.append(id)
+                    associated_scores.append(attack_scores[id])
+
+            """# rank with proba=scores
+            attack_ids = np.random.choice(potential_ids, size=len(potential_ids),
+                            replace=False, p=associated_scores)
+            """
+            # choose with proba=scores
+            attack_id = np.random.choice(potential_ids, p=associated_scores)
+            self.board_data.append(my_board)
+            self.action_data.append(attack_id)
+            if attack_id == 0: # it means no attack
+                Attacking = False
+                return None
             else:
-                N_non_zeros = np.count_nonzero(attack_scores)
-                attack_ids = np.random.choice(action_size, size=N_non_zeros,
-                                replace=False, p=attack_scores)
+                yield (src, dst, None, None) # full attack for now, we will see in the future if we can choose a more advanced strategy
+
+
             """
             # when trained
             attack_ids = np.argsort(-attack_scores)]
             """
 
+            """
             # then we need to choose a valid attack
             for i in range(action_size):
                 #attack_id = np.random.choice(action_size, p=attack_scores)
@@ -167,7 +190,6 @@ class RlAI(AI):
                 if attack_id == 0: # it means no attack
                     self.board_data.append(my_board)
                     self.action_data.append(attack_id)
-                    valid_att = True
                     Attacking = False
                     return None
                 else:
@@ -178,7 +200,7 @@ class RlAI(AI):
             self.board_data.append(my_board)
             self.action_data.append(attack_id)
             yield (src, dst, None, None) # full attack for now, we will see in the future if we can choose a more advanced strategy
-
+            """
     # to give rewards
     def event(self, msg):
         # strategy 1 : reward at the end

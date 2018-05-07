@@ -76,4 +76,5 @@ def play_games(params, Q_network, buffer):
         for k in sorted(wins, key=lambda x: wins[x]):
             #print("%s [%s]:\t%s" % (k, player_classes[my_colors.index(k)].__name__, wins[k]))
             #print("%s :\t%s" % (k, wins[k]))
+            pass
         return wins

@@ -162,10 +162,18 @@ class RlAI(AI):
                     associated_scores.append(attack_scores[id])
 
             associated_scores = np.array(associated_scores)
-            att_proba = np.true_divide(associated_scores, np.sum(associated_scores))
+            sum_scores = np.sum(associated_scores)
+            if sum_scores ==0:
+                attack_id = np.random.choice(potential_ids)
+            else:
+                att_proba = np.true_divide(associated_scores, np.sum(associated_scores))
+                attack_id = np.random.choice(potential_ids, p=att_proba)
+
             #sum_scores = sum(associated_scores)
             #att_proba = [score/sum_scores for score in associated_scores]
-            """# rank with proba=scores
+
+            """
+            # rank with proba=scores
             attack_ids = np.random.choice(potential_ids, size=len(potential_ids),
                             replace=False, p=associated_scores)
             """
@@ -177,6 +185,7 @@ class RlAI(AI):
                 Attacking = False
                 return None
             else:
+                src, dst = possible_attacks[attack_id].split('->')
                 yield (src, dst, None, None) # full attack for now, we will see in the future if we can choose a more advanced strategy
 
 

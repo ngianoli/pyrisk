@@ -123,21 +123,12 @@ class Game(object):
         self.players = {}
         self.player_to_id={}
 
-
         self.turn = 0
         self.turn_order = []
 
         # sot that AI can access the same DNN
         self.Q_network=Q_network
         self.buffer = buffer
-
-        """if self.options['curses']:
-            self.display = CursesDisplay(self.options['screen'], self,
-                                         self.options['cmap'], self.options['ckey'],
-                                         self.options['color'], self.options['wait'])
-        else:
-            """
-        #self.display = Display()
 
     def add_player(self, name, ai_class, **ai_kwargs):
         assert name not in self.players

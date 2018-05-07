@@ -178,7 +178,7 @@ class HrlAI(AI):
                             replace=False, p=associated_scores)
             """
             # choose with proba=scores
-            attack_id = np.random.choice(potential_ids, p=att_proba)
+            # attack_id = np.random.choice(potential_ids, p=att_proba)
             self.board_data.append(my_board)
             self.action_data.append(attack_id)
             if attack_id == 0: # it means no attack
